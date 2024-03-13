@@ -63,21 +63,28 @@
       <item>
        <widget class="QPushButton" name="pushButton_openFile">
         <property name="text">
-         <string>openFile</string>
+         <string>打开tif文件路径</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_reset">
         <property name="text">
-         <string>Reset</string>
+         <string>重置光标位置</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_imageProcess">
         <property name="text">
-         <string>ImageProcess</string>
+         <string>图像处理</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>渲染方法：</string>
         </property>
        </widget>
       </item>

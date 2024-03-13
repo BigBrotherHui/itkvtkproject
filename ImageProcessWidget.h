@@ -25,6 +25,7 @@ public:
 signals:
     void signal_operationFinished();
     void signal_volumeVisible(int);
+    void signal_switchRenderColor(QColor);
 protected slots:
     void on_pushButton_threshold_clicked();
     void on_pushButton_blur_clicked();
@@ -32,6 +33,8 @@ protected slots:
     void on_pushButton_smooth_clicked();
     void on_pushButton_canny_clicked();
     void on_pushButton_connectedComponentsWithStats_clicked();
+    void on_pushButton_measure_clicked();
+    void on_pushButton_setColor_clicked();
 protected:
     void closeEvent(QCloseEvent* event) override;
     void blur(vtkSmartPointer<vtkImageData> image,int blurX,int blurY);

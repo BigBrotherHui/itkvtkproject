@@ -1,16 +1,16 @@
-﻿#include "ImageProcessWidget.h"
+#include "ImageProcessWidget.h"
 #include "ui_ImageProcessWidget.h"
 #include <QMessageBox>
 #include <opencv2/opencv.hpp>
 #include <QtConcurrent/QtConcurrent>
 #include <vtkDiscreteFlyingEdges3D.h>
-#include <vtkSmoothPolyDataFilter.h>
+#include <vtkWindowedSincPolyDataFilter.h>
 #include <itkBinaryThresholdImageFilter.h>
 #include <itkVTKImageToImageFilter.h>
 #include <itkImageToVTKImageFilter.h>
 #include <itkSmoothingRecursiveGaussianImageFilter.h>
 #include <itkRescaleIntensityImageFilter.h>
-
+#include <vtkImageMathematics.h>
 ImageProcessWidget::ImageProcessWidget(QWidget *parent) :
     QDockWidget(parent),
     ui(new Ui::ImageProcessWidget)
@@ -102,7 +102,6 @@ void ImageProcessWidget::on_pushButton_blur_clicked()
     const float sigmaValue = 3;
     smoothFilter->SetSigma(sigmaValue);
     smoothFilter->SetInput(image);
-    smoothFilter->SetNumberOfThreads(8);
     smoothFilter->Update();
     itk::ImageToVTKImageFilter<ImageType>::Pointer iim = itk::ImageToVTKImageFilter<ImageType>::New();
     iim->SetInput(smoothFilter->GetOutput());
@@ -121,34 +120,57 @@ void ImageProcessWidget::on_pushButton_marchingcubes_clicked()
 
 void ImageProcessWidget::on_pushButton_smooth_clicked()
 {
-    smooth(m_polyData,5);
+    smooth(m_polyData,20);
     emit signal_operationFinished();
 }
 #include "itkSimpleContourExtractorImageFilter.h"
+#include <itkBinaryImageToStatisticsLabelMapFilter.h>
+void ImageProcessWidget::on_pushButton_measure_clicked() {
+	itk::VTKImageToImageFilter<ImageType>::Pointer importer = itk::VTKImageToImageFilter<ImageType>::New();
+	importer->SetInput(m_imageMask);
+	importer->Update();
+	itk::VTKImageToImageFilter<ImageType>::Pointer importer2 = itk::VTKImageToImageFilter<ImageType>::New();
+	importer2->SetInput(m_imageData);
+	importer2->Update();
+	typedef itk::BinaryImageToStatisticsLabelMapFilter< ImageType, ImageType > ConverterType;
+	ConverterType::Pointer converter = ConverterType::New();
+	converter->SetInput(importer->GetOutput());
+	converter->SetFeatureImage(importer2->GetOutput());
+	converter->SetFullyConnected(false);
+	converter->Update();
+	auto labels=converter->GetOutput()->GetLabels();
+	for (auto it = labels.begin(); it != labels.end(); ++it) {
+		auto labelObject = converter->GetOutput()->GetLabelObject(*it);
+        ui->label_PhysicalSize->setText(QString::number(labelObject->GetPhysicalSize())+"立方毫米");
+	}
+}
 void ImageProcessWidget::on_pushButton_canny_clicked()
 {
     itk::VTKImageToImageFilter<ImageType>::Pointer importer = itk::VTKImageToImageFilter<ImageType>::New();
-    importer->SetInput(m_imageData);
+    importer->SetInput(m_imageMask);
     importer->Update();
     ImageType::Pointer image = importer->GetOutput();
     using SimpleContourExtractorImageFilterType = itk::SimpleContourExtractorImageFilter<ImageType, ImageType>;
     SimpleContourExtractorImageFilterType::Pointer contourFilter
         = SimpleContourExtractorImageFilterType::New();
     contourFilter->SetInput(image);
-    contourFilter->SetOutputBackgroundValue(0);
-    contourFilter->SetOutputForegroundValue(255);
     contourFilter->Update();
+
     itk::ImageToVTKImageFilter<ImageType>::Pointer iim = itk::ImageToVTKImageFilter<ImageType>::New();
     iim->SetInput(contourFilter->GetOutput());
     iim->Update();
-    m_imageData->DeepCopy(iim->GetOutput());
+	if (!m_imageMask)
+	{
+		m_imageMask = vtkSmartPointer<vtkImageData>::New();
+	}
+	m_imageMask->DeepCopy(iim->GetOutput());
     /*QFuture<void> future = QtConcurrent::run(this, &ImageProcessWidget::canny, m_imageData, 0, 255);
     future.waitForFinished();*/
     emit signal_operationFinished();
 }
 #include "itkConnectedComponentImageFilter.h"
 #include "itkLabelShapeKeepNObjectsImageFilter.h"
-#include <vtkImageMathematics.h>
+
 void ImageProcessWidget::on_pushButton_connectedComponentsWithStats_clicked()
 {
     if(!m_imageMask)
@@ -358,19 +380,32 @@ void ImageProcessWidget::connectedComponentsWithStats(vtkSmartPointer<vtkImageDa
     }
     image->Modified();
 }
-
+#include <QColorDialog>
+void ImageProcessWidget::on_pushButton_setColor_clicked(){
+    QColor color=QColorDialog::getColor(Qt::green, this, "请选择面绘制的颜色");
+    if (color.isValid()) {
+        emit signal_switchRenderColor(color);
+    }
+}
+#include <vtkMassProperties.h>
+#include <vtkTriangleFilter.h>
 void ImageProcessWidget::marchingCubesConstruction(vtkSmartPointer<vtkImageData> image)
 {
     if (!image)
         return;
+	vtkSmartPointer<vtkImageMathematics> add = vtkSmartPointer<vtkImageMathematics>::New();
+	add->SetInput1Data(m_imageMask);
+	add->SetInput2Data(m_imageData);
+	add->SetOperationToMultiply();
+	add->Update();
     vtkSmartPointer<vtkDiscreteFlyingEdges3D> flying= vtkSmartPointer<vtkDiscreteFlyingEdges3D>::New();
-    flying->SetInputData(image);
-    flying->SetNumberOfContours(1);
-    flying->SetValue(0, 255);
+    flying->SetInputData(add->GetOutput());
+    flying->GenerateValues(20, m_imageData->GetScalarRange());
     flying->SetComputeGradients(false);
     flying->SetComputeNormals(false);
     flying->SetComputeScalars(false);
     flying->Update();
+    
     if (!m_polyData)
         m_polyData = vtkSmartPointer<vtkPolyData>::New();
     m_polyData->DeepCopy(flying->GetOutput());
@@ -380,7 +415,7 @@ void ImageProcessWidget::smooth(vtkSmartPointer<vtkPolyData> po, int iteraterCon
 {
     if(!po)
         return;
-    vtkSmartPointer<vtkSmoothPolyDataFilter> smt = vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
+    vtkSmartPointer<vtkWindowedSincPolyDataFilter> smt = vtkSmartPointer<vtkWindowedSincPolyDataFilter>::New();
     smt->SetInputData(po);
     smt->SetNumberOfIterations(iteraterConunt);
     smt->Update();

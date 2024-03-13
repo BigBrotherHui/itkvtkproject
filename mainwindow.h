@@ -30,6 +30,7 @@ protected slots:
 
     void slot_operationFinished();
     void slot_volumeVisible(int);
+    void slot_setRenderColor(QColor);
 protected:
     bool loadImagesFromDirectory(QString path, QProgressDialog* dialog);
     QProgressDialog* createProgressDialog(QString title, QString prompt, int range);

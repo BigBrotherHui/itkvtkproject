@@ -15,6 +15,7 @@
 #include "ImageProcessWidget.h"
 #include <vtkPolyDataMapper.h>
 #include <QDebug>
+#include <vtkProperty.h>
 class CommandProgressUpdate : public itk::Command
 {
 public:
@@ -126,12 +127,19 @@ void MainWindow::on_pushButton_reset_clicked()
 	ui->widget_sagittal->resetResliceCursor();
 }
 
+void MainWindow::slot_setRenderColor(QColor color) {
+    static_cast<vtkActor*>(ui->widget_3d->getActor("marchingCubesActor"))->GetProperty()->SetColor(color.red() / 255.,
+        color.green() / 255., color.blue() / 255.);
+    RenderAllVtkRenderWindows();
+}
+
 void MainWindow::on_pushButton_imageProcess_clicked()
 {
     if (!m_imageProcessWidget) {
         m_imageProcessWidget = new ImageProcessWidget(this);
         connect(m_imageProcessWidget, &ImageProcessWidget::signal_operationFinished, this, &MainWindow::slot_operationFinished);
         connect(m_imageProcessWidget, &ImageProcessWidget::signal_volumeVisible, this, &MainWindow::slot_volumeVisible);
+        connect(m_imageProcessWidget, &ImageProcessWidget::signal_switchRenderColor, this, &MainWindow::slot_setRenderColor);
     }
     m_imageProcessWidget->setImageData(m_imagedata);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea,m_imageProcessWidget);
@@ -147,6 +155,7 @@ void MainWindow::slot_operationFinished()
             vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
             vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
             actor->SetMapper(mapper);
+            actor->GetProperty()->SetColor(0, 1, 0);
             ui->widget_3d->addActor("marchingCubesActor", actor);
         }
         static_cast<vtkPolyDataMapper*>(static_cast<vtkActor*>(ui->widget_3d->getActor("marchingCubesActor"))->GetMapper())
