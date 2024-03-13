@@ -1,0 +1,12 @@
+﻿#pragma once
+
+// 3D视图六视图enum
+enum class ViewPort3D {
+    VIEWPORT3D_TOP = 0,
+    VIEWPORT3D_BOTTOM,
+    VIEWPORT3D_FRONT,
+    VIEWPORT3D_BACK,
+    VIEWPORT3D_LEFT,
+    VIEWPORT3D_RIGHT,
+    VIEWPORT3D_MAX
+};

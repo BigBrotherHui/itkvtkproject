@@ -1,0 +1,48 @@
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include <vtkSmartPointer.h>
+#include <vtkImageData.h>
+#include "VTKResliceCursorCallback.h"
+class ImageProcessWidget;
+class QProgressDialog;
+namespace Ui {
+class MainWindow;
+}
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+    
+public:
+    explicit MainWindow(QWidget *parent = 0);
+    ~MainWindow();
+    
+protected:
+   
+protected slots:
+    void on_pushButton_openFile_clicked();
+    void on_comboBox_blendMode_currentIndexChanged(int index);
+    void on_pushButton_reset_clicked();
+    void on_pushButton_imageProcess_clicked();
+protected:
+    bool loadImagesFromDirectory(QString path, QProgressDialog* dialog);
+    QProgressDialog* createProgressDialog(QString title, QString prompt, int range);
+    bool eventFilter(QObject* watched, QEvent* event);
+    void changeLayout(QWidget*);
+    void take_over();
+    void setButtonsEnable(bool,QWidget *except=nullptr);
+private:
+    Ui::MainWindow *ui;
+
+
+private slots:
+private:
+    vtkSmartPointer<vtkImageData> m_imagedata{nullptr};
+    vtkSmartPointer<VTKResliceCursorCallback> m_cbk;  // 十字光标交互回调类
+    bool m_ismax{ false };
+    ImageProcessWidget* m_imageProcessWidget{nullptr};
+};
+
+#endif // MAINWINDOW_H
