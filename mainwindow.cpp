@@ -13,6 +13,8 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include "ImageProcessWidget.h"
+#include <vtkPolyDataMapper.h>
+#include <QDebug>
 class CommandProgressUpdate : public itk::Command
 {
 public:
@@ -78,6 +80,14 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::RenderAllVtkRenderWindows()
+{
+    ui->widget_axial->renderWindow()->Render();
+    ui->widget_coronal->renderWindow()->Render();
+    ui->widget_sagittal->renderWindow()->Render();
+    ui->widget_3d->renderWindow()->Render();
+}
+
 void MainWindow::on_pushButton_openFile_clicked()
 {
     QString path=QFileDialog::getExistingDirectory(this, "open directory", "D:/Images");
@@ -118,10 +128,41 @@ void MainWindow::on_pushButton_reset_clicked()
 
 void MainWindow::on_pushButton_imageProcess_clicked()
 {
-    if (!m_imageProcessWidget)
+    if (!m_imageProcessWidget) {
         m_imageProcessWidget = new ImageProcessWidget(this);
+        connect(m_imageProcessWidget, &ImageProcessWidget::signal_operationFinished, this, &MainWindow::slot_operationFinished);
+        connect(m_imageProcessWidget, &ImageProcessWidget::signal_volumeVisible, this, &MainWindow::slot_volumeVisible);
+    }
+    m_imageProcessWidget->setImageData(m_imagedata);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea,m_imageProcessWidget);
     m_imageProcessWidget->show();
+}
+
+void MainWindow::slot_operationFinished()
+{
+    if (m_imageProcessWidget->GetPolyDataResult())
+    {
+        if(!ui->widget_3d->getActor("marchingCubesActor"))
+        {
+            vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+            vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+            actor->SetMapper(mapper);
+            ui->widget_3d->addActor("marchingCubesActor", actor);
+        }
+        static_cast<vtkPolyDataMapper*>(static_cast<vtkActor*>(ui->widget_3d->getActor("marchingCubesActor"))->GetMapper())
+    	->SetInputData(m_imageProcessWidget->GetPolyDataResult());
+    }
+    if(m_imageProcessWidget->GetImageMask())
+    {
+        ui->widget_3d->setImageMask(m_imageProcessWidget->GetImageMask());
+    }
+    RenderAllVtkRenderWindows();
+}
+
+void MainWindow::slot_volumeVisible(int v)
+{
+    ui->widget_3d->getActor("volume")->SetVisibility(v);
+    ui->widget_3d->renderWindow()->Render();
 }
 
 bool MainWindow::loadImagesFromDirectory(QString path, QProgressDialog* dialog)
@@ -137,7 +178,7 @@ bool MainWindow::loadImagesFromDirectory(QString path, QProgressDialog* dialog)
     NameGeneratorType::Pointer nameGenerator = NameGeneratorType::New();
     nameGenerator->SetSeriesFormat(path.toStdString() + "/Z%04d.tif");
     nameGenerator->SetStartIndex(49);
-    nameGenerator->SetEndIndex(1000);
+    nameGenerator->SetEndIndex(349);
     nameGenerator->SetIncrementIndex(1);
     std::vector<std::string> filenames = nameGenerator->GetFileNames();
     std::size_t numberOfFileNames = filenames.size();

@@ -24,6 +24,8 @@
 #include <vtkVolume.h>
 #include <vtkVolumeProperty.h>
 #include "Common.h"
+#include <vtkGPUVolumeRayCastMapper.h>
+
 namespace Ui {
 class VTKRender3DWidget;
 }
@@ -36,6 +38,7 @@ public:
     ~VTKRender3DWidget();
     void setImageData(vtkImageData* pImageData);
     void setBlendMode(int);
+    void setImageMask(vtkSmartPointer<vtkImageData> mask);
     /**
  * @brief  3D场景视图中相机姿态调整，如正视图、侧视图、顶视图等
  * @param  viewPort3D: 枚举类，记录相机的6种姿态
@@ -96,8 +99,9 @@ private:
     vtkSmartPointer<vtkPiecewiseFunction> m_opacityFunc;
     vtkSmartPointer<vtkPiecewiseFunction> m_gradientOpacityFunc;
     vtkSmartPointer<vtkColorTransferFunction> m_colorFunc;
-    vtkSmartPointer<vtkSmartVolumeMapper> m_volMapper;
+    vtkSmartPointer<vtkGPUVolumeRayCastMapper> m_volMapper;
     vtkSmartPointer<vtkVolumeProperty> m_volProps;
+    vtkSmartPointer<vtkImageData> m_imageMask;
 };
 
 #endif  // XJTPANEL3D_H

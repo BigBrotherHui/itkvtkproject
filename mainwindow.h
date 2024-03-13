@@ -18,7 +18,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    
+
+    void RenderAllVtkRenderWindows();
 protected:
    
 protected slots:
@@ -26,6 +27,9 @@ protected slots:
     void on_comboBox_blendMode_currentIndexChanged(int index);
     void on_pushButton_reset_clicked();
     void on_pushButton_imageProcess_clicked();
+
+    void slot_operationFinished();
+    void slot_volumeVisible(int);
 protected:
     bool loadImagesFromDirectory(QString path, QProgressDialog* dialog);
     QProgressDialog* createProgressDialog(QString title, QString prompt, int range);

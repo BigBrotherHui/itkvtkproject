@@ -15,8 +15,8 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkSphereSource.h>
-
 #include "ui_VTKRender3DWidget.h"
+#include <vtkImageData.h>
 
 class VTKRender3DWidget::VTKRender3DWidgetImpl {
 public:
@@ -54,10 +54,7 @@ public:
     }
 
 public:
-    // vtkNew<vtkRenderer> m_backgroundRender;                    // 背景渲染器
     vtkNew<vtkRenderer> m_3DRenderer;  // 3D渲染器
-    // vtkNew<vtkInteractorStyleTrackballCamera> m_trackballcamera;  // 三维相机交互样式
-    // vtkNew<vtkAxesActor> m_axes;                                  // 坐标方向箭头
     vtkNew<vtkAnnotatedCubeActor> m_axes;             // 坐标方向箭头
     vtkNew<vtkOrientationMarkerWidget> m_markwidget;  // 坐标方向指示器
 };
@@ -74,7 +71,7 @@ VTKRender3DWidget::VTKRender3DWidget(QWidget *parent)
     m_volume = vtkSmartPointer<vtkVolume>::New();
     m_colorFunc = vtkSmartPointer<vtkColorTransferFunction>::New();
     m_opacityFunc = vtkSmartPointer<vtkPiecewiseFunction>::New();
-    m_volMapper = vtkSmartPointer<vtkSmartVolumeMapper>::New();
+    m_volMapper = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
     m_volProps = vtkSmartPointer<vtkVolumeProperty>::New();
     m_gradientOpacityFunc = vtkSmartPointer<vtkPiecewiseFunction>::New();
     m_gradientOpacityFunc->AddPoint(0., 1.);
@@ -85,6 +82,7 @@ VTKRender3DWidget::VTKRender3DWidget(QWidget *parent)
     m_volProps->SetColor(m_colorFunc);
     m_volume->SetMapper(m_volMapper);
     m_volume->SetProperty(m_volProps);
+    
     m_volMapper->SetBlendModeToComposite();
     m_volMapper->SetAutoAdjustSampleDistances(0);
     m_volMapper->SetSampleDistance(4);
@@ -110,13 +108,13 @@ void VTKRender3DWidget::setImageData(vtkImageData* pImageData)
     m_volMapper->SetInputData(pImageData);
 
     m_opacityFunc->RemoveAllPoints();
-    m_opacityFunc->AddPoint(70, 0.00);
-    m_opacityFunc->AddPoint(90, 0.40);
-    m_opacityFunc->AddPoint(180, 0.60);
+    m_opacityFunc->AddPoint(10, 1);
+    m_opacityFunc->AddPoint(90, 1);
+    m_opacityFunc->AddPoint(180, 1);
     //设置梯度不透明属性
     m_gradientOpacityFunc->RemoveAllPoints();
-    m_gradientOpacityFunc->AddPoint(10, 0.0);
-    m_gradientOpacityFunc->AddPoint(90, 0.5);
+    m_gradientOpacityFunc->AddPoint(10, 1);
+    m_gradientOpacityFunc->AddPoint(90, 1);
     m_gradientOpacityFunc->AddPoint(100, 1.0);
     //设置颜色属性
     m_colorFunc->RemoveAllPoints();
@@ -131,6 +129,12 @@ void VTKRender3DWidget::setImageData(vtkImageData* pImageData)
 void VTKRender3DWidget::setBlendMode(int index)
 {
     m_volMapper->SetBlendMode(index);
+}
+
+void VTKRender3DWidget::setImageMask(vtkSmartPointer<vtkImageData> mask)
+{
+    m_volMapper->SetMaskTypeToBinary();
+    m_volMapper->SetMaskInput(mask);
 }
 
 void VTKRender3DWidget::switchCameraView(ViewPort3D viewPort3D)
@@ -232,18 +236,18 @@ void VTKRender3DWidget::initialRender()
     // ui->qvtkwidget->renderWindow()->AddRenderer(m_impl->m_backgroundRender);
 
     // 添加3D坐标轴小部件
-    // m_impl->m_axes->SetXPlusFaceText("L");
-    // m_impl->m_axes->SetXMinusFaceText("R");
-    // m_impl->m_axes->SetYMinusFaceText("A");
-    // m_impl->m_axes->SetYPlusFaceText("P");
-    // m_impl->m_axes->SetZMinusFaceText("I");
-    // m_impl->m_axes->SetZPlusFaceText("S");
-    // m_impl->m_markwidget->SetOutlineColor(1, 1, 1);
-    // m_impl->m_markwidget->SetOrientationMarker(m_impl->m_axes);
-    // m_impl->m_markwidget->SetInteractor(interactor);
-    // m_impl->m_markwidget->SetViewport(0.9, 0.05, 1.0, 0.15);
-    // m_impl->m_markwidget->SetEnabled(1);
-    // m_impl->m_markwidget->InteractiveOff();
+     m_impl->m_axes->SetXPlusFaceText("L");
+     m_impl->m_axes->SetXMinusFaceText("R");
+     m_impl->m_axes->SetYMinusFaceText("A");
+     m_impl->m_axes->SetYPlusFaceText("P");
+     m_impl->m_axes->SetZMinusFaceText("I");
+     m_impl->m_axes->SetZPlusFaceText("S");
+     m_impl->m_markwidget->SetOutlineColor(1, 1, 1);
+     m_impl->m_markwidget->SetOrientationMarker(m_impl->m_axes);
+     m_impl->m_markwidget->SetInteractor(ui->qvtkwidget->interactor());
+     m_impl->m_markwidget->SetViewport(0.9, 0.05, 1.0, 0.15);
+     m_impl->m_markwidget->SetEnabled(1);
+     m_impl->m_markwidget->InteractiveOff();
     vtkCamera *pCamera = m_impl->m_3DRenderer->GetActiveCamera();
     ui->qvtkwidget->renderWindow()->Render();
 }

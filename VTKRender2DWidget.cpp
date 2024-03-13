@@ -146,10 +146,6 @@ void VTKRender2DWidget::setImageData(vtkImageData *pImageData)
     // 构建信号槽
     disconnect(ui->horizontalScrollBar, SIGNAL(valueChanged(int)), this, SLOT(updateCursor(int)));
     connect(ui->horizontalScrollBar, SIGNAL(valueChanged(int)), this, SLOT(updateCursor(int)));
-
-    setPatientInfo();
-
-//    resetPosition(200, 150, 0, 50);
 }
 
 void VTKRender2DWidget::renderAll()
@@ -246,30 +242,6 @@ void VTKRender2DWidget::setSliceCursorPosition(double x, double y, double z)
     double imagePoint[3] = {0, 0, 0};
 
     m_impl->m_ImageData->TransformPhysicalPointToContinuousIndex(worldPoint, imagePoint);
-
-    // // 获取图像的extent、origin、space数值
-    // int extent[6];
-    // double origin[3], spacing[3];
-
-    // m_impl->m_ImageData->GetExtent(extent);
-    // m_impl->m_ImageData->GetOrigin(origin);
-    // m_impl->m_ImageData->GetSpacing(spacing);
-
-    // // 计算该世界坐标系下的点，在图像像素坐标系下的索引值
-    // int iX, iY, iZ;
-    // iX = (int)(x - origin[0]) / spacing[0] + 0.5;  // 计算出x坐标对应的像素索引dx，并进行四舍五入
-    // iY = (int)(y - origin[1]) / spacing[1] + 0.5;
-    // iZ = (int)(z - origin[2]) / spacing[2] + 0.5;
-
-    // iX = iX < extent[0] ? extent[0] : iX;
-    // iX = iX > extent[1] ? extent[1] : iX;
-    // iY = iY < extent[2] ? extent[2] : iY;
-    // iY = iY > extent[3] ? extent[3] : iY;
-    // iZ = iZ < extent[4] ? extent[4] : iZ;
-    // iZ = iZ > extent[5] ? extent[5] : iZ;
-
-    // // LOG_DEBUG("VTKRender2DWidget pointer {}", this);
-    // LOG_DEBUG("iX={}, iY={}, iZ={}", iX, iY, iZ);
 }
 
 void VTKRender2DWidget::setSliceCursorPosition(int iX, int iY, int iZ)
@@ -409,15 +381,6 @@ void VTKRender2DWidget::updateImageSliceToPickedCursor()
     m_impl->m_pImageViewer->SetSlice(m_impl->m_iImageSlice + 1);
     m_impl->m_pImageViewer->SetSlice(m_impl->m_iImageSlice - 1);
     ui->openGLWidget->renderWindow()->Render();
-}
-
-void VTKRender2DWidget::setPatientInfo()
-{
-
-}
-void VTKRender2DWidget::setPatientInfoVisible(bool visible)
-{
-    ui->m_patientInfoPanel->setVisible(visible);
 }
 
 void VTKRender2DWidget::setSlice(int s)

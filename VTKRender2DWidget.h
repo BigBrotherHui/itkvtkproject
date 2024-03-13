@@ -142,7 +142,6 @@ public:
 
     void updateImageSliceToPickedCursor();
     void Dolly(double factor);
-    void setPatientInfoVisible(bool visible);
     void setSlice(int s);
     int getSlice();
 signals:
@@ -164,34 +163,6 @@ public slots:
 protected:
 
     virtual void mouseMoveEvent(QMouseEvent *event) override;
-
-private:
-    ///**
-    // * @brief paintEvent
-    // * 重写绘图时间
-    // * @param event
-    // */
-    // void paintEvent(QPaintEvent *event);
-    ///**
-    // * @brief resizeEvent
-    // * 重置窗口尺寸
-    // * @param event
-    // */
-    // void resizeEvent(QResizeEvent *event);
-    ///**
-    // * @brief enterEvent
-    // * 鼠标进入事件
-    // * @param event
-    // */
-    // void enterEvent(QEvent *event);
-    ///**
-    // * @brief leaveEvent
-    // * 鼠标离开事件
-    // * @param event
-    // */
-    // void leaveEvent(QEvent *event);
-
-    void setPatientInfo();
 
 private:
     Ui::VTKRender2DWidget *ui;
