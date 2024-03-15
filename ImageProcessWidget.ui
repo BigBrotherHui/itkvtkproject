@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
+    <width>395</width>
     <height>718</height>
    </rect>
   </property>
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>300</width>
-    <height>325</height>
+    <width>395</width>
+    <height>530</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -32,136 +32,262 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <widget class="QPushButton" name="pushButton_blur">
-      <property name="text">
-       <string>模糊</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>11</x>
+      <y>11</y>
+      <width>345</width>
+      <height>668</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>1</number>
+    </property>
+    <widget class="QWidget" name="tab_3DImageProcess">
+     <attribute name="title">
+      <string>3D图像处理</string>
+     </attribute>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QLabel" name="label">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>分割阈值：</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBox_threshold">
+          <property name="maximum">
+           <number>255</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_threshold">
+          <property name="text">
+           <string>阈值分割</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_blur">
         <property name="text">
-         <string>分割阈值：</string>
+         <string>模糊</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="spinBox_threshold">
-        <property name="maximum">
-         <number>255</number>
+       <widget class="QPushButton" name="pushButton_connectedComponentsWithStats">
+        <property name="text">
+         <string>提取最大连通域</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_threshold">
+       <widget class="QPushButton" name="pushButton_canny">
         <property name="text">
-         <string>阈值分割</string>
+         <string>提取轮廓</string>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string/>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="pushButton_marchingcubes">
+           <property name="text">
+            <string>面绘制</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_setColor">
+           <property name="text">
+            <string>设置颜色</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_saveMesh">
+           <property name="text">
+            <string>保存当前面</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_smooth">
+        <property name="text">
+         <string>平滑面</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string/>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>体积大小为：</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_PhysicalSize">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QPushButton" name="pushButton_measure">
+           <property name="text">
+            <string>体积测量</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_saveImage">
+        <property name="text">
+         <string>保存当前图像</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_volumeVisible">
+        <property name="text">
+         <string>Make Volume Visible</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>237</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
-    </item>
-    <item>
-     <widget class="QPushButton" name="pushButton_connectedComponentsWithStats">
-      <property name="text">
-       <string>提取最大连通域</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="pushButton_canny">
-      <property name="text">
-       <string>提取轮廓</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QGroupBox" name="groupBox_2">
-      <property name="title">
-       <string/>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QPushButton" name="pushButton_marchingcubes">
-         <property name="text">
-          <string>面绘制</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton_setColor">
-         <property name="text">
-          <string>设置颜色</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="pushButton_smooth">
-      <property name="text">
-       <string>平滑面</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QGroupBox" name="groupBox">
-      <property name="title">
-       <string/>
-      </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>体积大小为：</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLabel" name="label_PhysicalSize">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="2">
-        <widget class="QPushButton" name="pushButton_measure">
-         <property name="text">
-          <string>体积测量</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QCheckBox" name="checkBox_volumeVisible">
-      <property name="text">
-       <string>Make Volume Visible</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>477</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-   </layout>
+    </widget>
+    <widget class="QWidget" name="tab_2DImageProcess">
+     <attribute name="title">
+      <string>2D图像处理</string>
+     </attribute>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QVTKOpenGLNativeWidget" name="widget_imagewindow" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>200</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>阈值分割：</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBox_threshold_2d"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_threshold_2d">
+          <property name="text">
+           <string>阈值处理</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_blur_2d">
+        <property name="text">
+         <string>模糊</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_canny_2d">
+        <property name="text">
+         <string>边缘提取</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_extract_2d">
+        <property name="text">
+         <string>提取最大连通域</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_fill_2d">
+        <property name="text">
+         <string>填充</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_segment_2d">
+        <property name="text">
+         <string>分割源图</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>196</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </widget>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QVTKOpenGLNativeWidget</class>
+   <extends>QWidget</extends>
+   <header>qvtkopenglnativewidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

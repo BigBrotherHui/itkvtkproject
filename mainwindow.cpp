@@ -71,7 +71,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->widget_sagittal->installEventFilter(this);
     ui->widget_3d->installEventFilter(this);
 
-    setButtonsEnable(0,ui->pushButton_openFile);
+    std::vector<QWidget*> except;
+    except.push_back(ui->pushButton_openFile);
+    except.push_back(ui->pushButton_openDir);
+    setButtonsEnable(0, except);
 
     take_over();
 }
@@ -91,14 +94,39 @@ void MainWindow::RenderAllVtkRenderWindows()
 
 void MainWindow::on_pushButton_openFile_clicked()
 {
-    QString path=QFileDialog::getExistingDirectory(this, "open directory", "D:/Images");
+    QString path = QFileDialog::getOpenFileName(this, "open file", "D:/");
+    if (path.isEmpty())
+        return;
+    QProgressDialog* progressDialog = createProgressDialog(tr("Loading"), tr("Loading Image, Please Wait..."), 101);
+    progressDialog->setWindowFlag(Qt::WindowStaysOnTopHint);
+    bool ret = loadImagesFromSingleFile(path, progressDialog);
+    progressDialog->deleteLater();
+    if (!ret)
+    {
+        QMessageBox::warning(this, "Warning", "failed to import image!");
+        return;
+    }
+    //ui->widget_axial->setImageData(m_imagedata);
+    //ui->widget_coronal->setImageData(m_imagedata);
+    //ui->widget_sagittal->setImageData(m_imagedata);
+    //ui->widget_3d->setImageData(m_imagedata);
+
+    ui->widget_3d->switchCameraView(ViewPort3D::VIEWPORT3D_FRONT);
+    setButtonsEnable(1,ui->pushButton_openDir);
+    m_isSingleFile = 1;
+    on_pushButton_imageProcess_clicked();
+}
+
+void MainWindow::on_pushButton_openDir_clicked()
+{
+    QString path = QFileDialog::getExistingDirectory(this, "open directory", "D:/");
     if (path.isEmpty())
         return;
     QProgressDialog* progressDialog = createProgressDialog(tr("Loading"), tr("Loading Images, Please Wait..."), 101);
     progressDialog->setWindowFlag(Qt::WindowStaysOnTopHint);
-    bool ret=loadImagesFromDirectory(path,progressDialog);
+    bool ret = loadImagesFromDirectory(path, progressDialog);
     progressDialog->deleteLater();
-    if(!ret)
+    if (!ret)
     {
         QMessageBox::warning(this, "Warning", "failed to import images!");
         return;
@@ -110,7 +138,7 @@ void MainWindow::on_pushButton_openFile_clicked()
 
     ui->widget_3d->switchCameraView(ViewPort3D::VIEWPORT3D_FRONT);
 
-    setButtonsEnable(1);
+    setButtonsEnable(1,ui->pushButton_openFile);
 }
 
 void MainWindow::on_comboBox_blendMode_currentIndexChanged(int index)
@@ -141,8 +169,17 @@ void MainWindow::on_pushButton_imageProcess_clicked()
         connect(m_imageProcessWidget, &ImageProcessWidget::signal_volumeVisible, this, &MainWindow::slot_volumeVisible);
         connect(m_imageProcessWidget, &ImageProcessWidget::signal_switchRenderColor, this, &MainWindow::slot_setRenderColor);
     }
-    m_imageProcessWidget->setImageData(m_imagedata);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea,m_imageProcessWidget);
+    if(m_isSingleFile)
+    {
+        m_imageProcessWidget->setCurrentPageTo2DImageProcess();
+        m_imageProcessWidget->setImageData(m_imagedata2d);
+    }
+    else
+    {
+        m_imageProcessWidget->setCurrentPageTo3DImageProcess();
+        m_imageProcessWidget->setImageData(m_imagedata);
+    }
     m_imageProcessWidget->show();
 }
 
@@ -184,12 +221,24 @@ bool MainWindow::loadImagesFromDirectory(QString path, QProgressDialog* dialog)
 
     ImageIOType::Pointer tiffIO = ImageIOType::New();
     typedef itk::NumericSeriesFileNames NameGeneratorType;
-    NameGeneratorType::Pointer nameGenerator = NameGeneratorType::New();
+    auto fileinfolist=QDir(path).entryInfoList();
+    std::vector<std::string> filenames;
+    static int i = 0;
+    for(auto file: fileinfolist)
+    {
+        if (i++ == 300)
+            break;
+        if (file.suffix() == "tif")
+        {
+            filenames.push_back(file.absoluteFilePath().toStdString());
+        }
+    }
+    /*NameGeneratorType::Pointer nameGenerator = NameGeneratorType::New();
     nameGenerator->SetSeriesFormat(path.toStdString() + "/Z%04d.tif");
     nameGenerator->SetStartIndex(49);
     nameGenerator->SetEndIndex(349);
     nameGenerator->SetIncrementIndex(1);
-    std::vector<std::string> filenames = nameGenerator->GetFileNames();
+    std::vector<std::string> filenames = nameGenerator->GetFileNames();*/
     std::size_t numberOfFileNames = filenames.size();
 
     ReaderType::Pointer reader = ReaderType::New();
@@ -235,6 +284,61 @@ bool MainWindow::loadImagesFromDirectory(QString path, QProgressDialog* dialog)
         m_imagedata = vtkSmartPointer<vtkImageData>::New();
     }
     m_imagedata->DeepCopy(imageToVTKImageFilter->GetOutput());
+    return true;
+}
+
+bool MainWindow::loadImagesFromSingleFile(QString path, QProgressDialog* dialog)
+{
+    constexpr unsigned int Dimension = 2;
+    using PixelType = unsigned short;
+    using ImageType = itk::Image<PixelType, Dimension>;
+    using ReaderType = itk::ImageFileReader<ImageType>;
+    using ImageIOType = itk::TIFFImageIO;
+
+    ImageIOType::Pointer tiffIO = ImageIOType::New();
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetImageIO(tiffIO);
+    reader->SetFileName(path.toStdString().c_str());
+    CommandProgressUpdate::Pointer observer = CommandProgressUpdate::New();
+    observer->setProgressDialog(dialog);
+    reader->AddObserver(itk::ProgressEvent(), observer);
+    try
+    {
+        reader->Update();
+    }
+    catch (const itk::ExceptionObject& e)
+    {
+        std::cerr << "exception in file reader " << std::endl;
+        std::cerr << e << std::endl;
+        return false;
+    }
+    using OutputImageType = itk::Image<unsigned char, 2>;
+    using RescaleType = itk::RescaleIntensityImageFilter<ImageType, ImageType>;
+    auto rescale = RescaleType::New();
+    rescale->SetInput(reader->GetOutput());
+    rescale->SetOutputMinimum(0);
+    rescale->SetOutputMaximum(itk::NumericTraits<unsigned char>::max());
+    rescale->Update();
+
+    using CastImageFilterType = itk::CastImageFilter<ImageType, OutputImageType>;
+    auto filter = CastImageFilterType::New();
+    filter->SetInput(rescale->GetOutput());
+    filter->Update();
+    using ImageToVTKImageFilterType = itk::ImageToVTKImageFilter<OutputImageType>;
+    auto imageToVTKImageFilter = ImageToVTKImageFilterType::New();
+    imageToVTKImageFilter->SetInput(filter->GetOutput());
+    try {
+        imageToVTKImageFilter->Update();
+    }
+    catch (const itk::ExceptionObject& error) {
+        std::cerr << "Error: " << error << std::endl;
+        return false;
+    }
+    if (!m_imagedata2d)
+    {
+        m_imagedata2d = vtkSmartPointer<vtkImageData>::New();
+    }
+    m_imagedata2d->DeepCopy(imageToVTKImageFilter->GetOutput());
     return true;
 }
 
@@ -297,13 +401,29 @@ void MainWindow::take_over()
 
 }
 
-void MainWindow::setButtonsEnable(bool f,QWidget* except)
+void MainWindow::setButtonsEnable(bool f, QWidget* except)
 {
     ui->pushButton_imageProcess->setEnabled(f);
     ui->pushButton_openFile->setEnabled(f);
     ui->pushButton_reset->setEnabled(f);
     ui->comboBox_blendMode->setEnabled(f);
+    ui->pushButton_openDir->setEnabled(f);
+    if (except)
+        except->setEnabled(!f);
+}
 
-    if(except)
-		except->setEnabled(!f);
+void MainWindow::setButtonsEnable(bool f, std::vector<QWidget*>except)
+{
+    ui->pushButton_imageProcess->setEnabled(f);
+    ui->pushButton_openFile->setEnabled(f);
+    ui->pushButton_reset->setEnabled(f);
+    ui->comboBox_blendMode->setEnabled(f);
+    ui->pushButton_openDir->setEnabled(f);
+    if(except.size()!=0)
+    {
+	    for(int i=0;i<except.size();++i)
+	    {
+            except[i]->setEnabled(!f);
+	    }
+    }
 }
