@@ -17,6 +17,7 @@
 #include <itkTIFFImageIO.h>
 #include <itkImageSeriesWriter.h>
 #include <itkNumericSeriesFileNames.h>
+#include <vtkImageProperty.h>
 ImageProcessWidget::ImageProcessWidget(QWidget *parent) :
     QDockWidget(parent),
     ui(new Ui::ImageProcessWidget)
@@ -42,7 +43,7 @@ void ImageProcessWidget::setImageData(vtkSmartPointer<vtkImageData> imageData)
     {
         m_imageMask2d = vtkSmartPointer<vtkImageData>::New();
     }
-    if (m_imageData && ui->tabWidget==ui->tab_2DImageProcess)
+    if (m_imageData && ui->tabWidget->currentWidget()==ui->tab_2DImageProcess)
     {
         m_imageMask2d->DeepCopy(m_imageData);
         m_imageactor->SetInputData(m_imageMask2d);
