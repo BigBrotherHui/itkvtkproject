@@ -16,6 +16,9 @@
 #include <vtkPolyDataMapper.h>
 #include <QDebug>
 #include <vtkProperty.h>
+#include <vtkTIFFReader.h>
+#include <vtkStringArray.h>
+#include <vtkImageCast.h>
 class CommandProgressUpdate : public itk::Command
 {
 public:
@@ -46,6 +49,27 @@ public:
     }
 private:
     QProgressDialog* dialog;
+};
+
+class ProgressObserver : public vtkCommand
+{
+public:
+	static ProgressObserver* New()
+	{
+		return new ProgressObserver;
+	}
+
+	void Execute(vtkObject* caller, unsigned long eventId, void* callData) override
+	{
+		if (eventId == vtkCommand::ProgressEvent)
+		{
+			double progress = *static_cast<double*>(callData);
+            if (m_progressDialog) {
+                m_progressDialog->setValue(progress);
+            }
+		}
+	}
+    QProgressDialog* m_progressDialog{ nullptr };
 };
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -110,7 +134,7 @@ void MainWindow::on_pushButton_openFile_clicked()
     //ui->widget_coronal->setImageData(m_imagedata);
     //ui->widget_sagittal->setImageData(m_imagedata);
     //ui->widget_3d->setImageData(m_imagedata);
-
+        
     ui->widget_3d->switchCameraView(ViewPort3D::VIEWPORT3D_FRONT);
     setButtonsEnable(1,ui->pushButton_openDir);
     m_isSingleFile = 1;
@@ -122,15 +146,16 @@ void MainWindow::on_pushButton_openDir_clicked()
     QString path = QFileDialog::getExistingDirectory(this, "open directory", "D:/");
     if (path.isEmpty())
         return;
-    QProgressDialog* progressDialog = createProgressDialog(tr("Loading"), tr("Loading Images, Please Wait..."), 101);
-    progressDialog->setWindowFlag(Qt::WindowStaysOnTopHint);
-    bool ret = loadImagesFromDirectory(path, progressDialog);
-    progressDialog->deleteLater();
-    if (!ret)
-    {
-        QMessageBox::warning(this, "Warning", "failed to import images!");
-        return;
-    }
+	QProgressDialog* progressDialog = createProgressDialog(tr("Loading"), tr("Loading Images, Please Wait..."), 101);
+	progressDialog->setWindowFlag(Qt::WindowStaysOnTopHint);
+	bool ret = loadImagesFromDirectory(path, progressDialog);
+	progressDialog->deleteLater();
+	if (!ret)
+	{
+		QMessageBox::warning(this, "Warning", "failed to import images!");
+		return;
+	}
+
     ui->widget_axial->setImageData(m_imagedata);
     ui->widget_coronal->setImageData(m_imagedata);
     ui->widget_sagittal->setImageData(m_imagedata);
@@ -213,77 +238,95 @@ void MainWindow::slot_volumeVisible(int v)
 
 bool MainWindow::loadImagesFromDirectory(QString path, QProgressDialog* dialog)
 {
-    constexpr unsigned int Dimension = 3;
-    using PixelType = unsigned short;
-    using ImageType = itk::Image<PixelType, Dimension>;
-    using ReaderType = itk::ImageSeriesReader<ImageType>;
-    using ImageIOType = itk::TIFFImageIO;
+    //constexpr unsigned int Dimension = 3;
+    //using PixelType = unsigned short;
+    //using ImageType = itk::Image<PixelType, Dimension>;
+    //using ReaderType = itk::ImageSeriesReader<ImageType>;
+    //using ImageIOType = itk::TIFFImageIO;
 
-    ImageIOType::Pointer tiffIO = ImageIOType::New();
-    typedef itk::NumericSeriesFileNames NameGeneratorType;
-    auto fileinfolist=QDir(path).entryInfoList();
-    std::vector<std::string> filenames;
-    static int i = 0;
-    for(auto file: fileinfolist)
-    {
-        if (i++ == 300)
-            break;
-        if (file.suffix() == "tif")
-        {
-            filenames.push_back(file.absoluteFilePath().toStdString());
-        }
-    }
-    /*NameGeneratorType::Pointer nameGenerator = NameGeneratorType::New();
-    nameGenerator->SetSeriesFormat(path.toStdString() + "/Z%04d.tif");
-    nameGenerator->SetStartIndex(49);
-    nameGenerator->SetEndIndex(349);
-    nameGenerator->SetIncrementIndex(1);
-    std::vector<std::string> filenames = nameGenerator->GetFileNames();*/
-    std::size_t numberOfFileNames = filenames.size();
+    //ImageIOType::Pointer tiffIO = ImageIOType::New();
+    //typedef itk::NumericSeriesFileNames NameGeneratorType;
+    //auto fileinfolist=QDir(path).entryInfoList();
+    //std::vector<std::string> filenames;
+    //int i = 0;
+    //for(auto file: fileinfolist)
+    //{
+    //    if (i++ == 300)
+    //        break;
+    //    if (file.suffix() == "tif")
+    //    {
+    //        filenames.push_back(file.absoluteFilePath().toStdString());
+    //    }
+    //}
+    //std::size_t numberOfFileNames = filenames.size();
 
-    ReaderType::Pointer reader = ReaderType::New();
-    reader->SetImageIO(tiffIO);
-    reader->SetFileNames(filenames);
-    CommandProgressUpdate::Pointer observer = CommandProgressUpdate::New();
-    observer->setProgressDialog(dialog);
-    reader->AddObserver(itk::ProgressEvent(), observer);
-    try
-    {
-        reader->Update();
-    }
-    catch (const itk::ExceptionObject& e)
-    {
-        std::cerr << "exception in file reader " << std::endl;
-        std::cerr << e << std::endl;
-        return false;
-    }
-    using OutputImageType = itk::Image<unsigned char, 3>;
-    using RescaleType = itk::RescaleIntensityImageFilter<ImageType, ImageType>;
-    auto rescale = RescaleType::New();
-    rescale->SetInput(reader->GetOutput());
-    rescale->SetOutputMinimum(0);
-    rescale->SetOutputMaximum(itk::NumericTraits<unsigned char>::max());
-    rescale->Update();
+    //ReaderType::Pointer reader = ReaderType::New();
+    //reader->SetImageIO(tiffIO);
+    //reader->SetFileNames(filenames);
+    //CommandProgressUpdate::Pointer observer = CommandProgressUpdate::New();
+    //observer->setProgressDialog(dialog);
+    //reader->AddObserver(itk::ProgressEvent(), observer);
+    //try
+    //{
+    //    reader->Update();
+    //}
+    //catch (const itk::ExceptionObject& e)
+    //{
+    //    std::cerr << "exception in file reader " << std::endl;
+    //    std::cerr << e << std::endl;
+    //    return false;
+    //}
+    //using OutputImageType = itk::Image<unsigned char, 3>;
+    //using RescaleType = itk::RescaleIntensityImageFilter<ImageType, ImageType>;
+    //auto rescale = RescaleType::New();
+    //rescale->SetInput(reader->GetOutput());
+    //rescale->SetOutputMinimum(0);
+    //rescale->SetOutputMaximum(itk::NumericTraits<unsigned char>::max());
+    //rescale->Update();
 
-    using CastImageFilterType = itk::CastImageFilter<ImageType, OutputImageType>;
-    auto filter = CastImageFilterType::New();
-    filter->SetInput(rescale->GetOutput());
-    filter->Update();
-    using ImageToVTKImageFilterType = itk::ImageToVTKImageFilter<OutputImageType>;
-    auto imageToVTKImageFilter = ImageToVTKImageFilterType::New();
-    imageToVTKImageFilter->SetInput(filter->GetOutput());
-    try {
-        imageToVTKImageFilter->Update();
-    }
-    catch (const itk::ExceptionObject& error) {
-        std::cerr << "Error: " << error << std::endl;
-        return false;
-    }
+    //using CastImageFilterType = itk::CastImageFilter<ImageType, OutputImageType>;
+    //auto filter = CastImageFilterType::New();
+    //filter->SetInput(rescale->GetOutput());
+    //filter->Update();
+    //using ImageToVTKImageFilterType = itk::ImageToVTKImageFilter<OutputImageType>;
+    //auto imageToVTKImageFilter = ImageToVTKImageFilterType::New();
+    //imageToVTKImageFilter->SetInput(filter->GetOutput());
+    //try {
+    //    imageToVTKImageFilter->Update();
+    //}
+    //catch (const itk::ExceptionObject& error) {
+    //    std::cerr << "Error: " << error << std::endl;
+    //    return false;
+    //}
+	vtkNew<vtkStringArray> stringArray;
+	auto fileinfolist = QDir(path).entryInfoList();
+	int i = 0;
+	for (auto file : fileinfolist)
+	{
+		if (i++ == 300)
+			break;
+		if (file.suffix() == "tif")
+		{
+			stringArray->InsertNextValue(file.absoluteFilePath().toStdString());
+		}
+	}
+	vtkNew<vtkTIFFReader> reader;
+	reader->SetFileDimensionality(3);
+	reader->SetFileNames(stringArray);
+    vtkSmartPointer<ProgressObserver> observer = vtkSmartPointer<ProgressObserver>::New();
+    observer->m_progressDialog = dialog;
+    reader->AddObserver(vtkCommand::ProgressEvent, observer);
+	reader->Update();
+	vtkSmartPointer<vtkImageCast> imgCast =
+		vtkSmartPointer<vtkImageCast>::New();
+	imgCast->SetInputData(reader->GetOutput());
+	imgCast->SetOutputScalarTypeToUnsignedChar();
+	imgCast->Update();
     if (!m_imagedata)
     {
         m_imagedata = vtkSmartPointer<vtkImageData>::New();
     }
-    m_imagedata->DeepCopy(imageToVTKImageFilter->GetOutput());
+    m_imagedata->DeepCopy(imgCast->GetOutput());
     return true;
 }
 
